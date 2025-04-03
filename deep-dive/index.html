@@ -14,27 +14,23 @@
     vnode.el = el;
 
     // props
-    if (vnode.props) {
-      for (const key in vnode.props) {
-        // Bypass event listener to prevent complexity on Patch functions
-        if (/^on/.test(key)) {
-          el.addEventListener(
-            key.substr(2).toLocaleLowerCase(),
-            vnode.props[key]
-          );
-        } else {
-          el.setAttribute(key, vnode.props[key]);
-        }
+    for (const key in vnode.props) {
+      // Bypass event listener to prevent complexity on Patch functions
+      if (/^on/.test(key)) {
+        el.addEventListener(
+          key.substr(2).toLocaleLowerCase(),
+          vnode.props[key]
+        );
+      } else {
+        el.setAttribute(key, vnode.props[key]);
       }
     }
 
     // children
-    if (vnode.children) {
-      if (typeof vnode.children === "string") {
-        el.appendChild(document.createTextNode(vnode.children));
-      } else {
-        vnode.children.forEach((child) => mount(child, el));
-      }
+    if (typeof vnode.children === "string") {
+      el.appendChild(document.createTextNode(vnode.children));
+    } else {
+      vnode.children.forEach((child) => mount(child, el));
     }
 
     container.appendChild(el);
@@ -117,3 +113,17 @@
 
   setTimeout(() => patch(vdom, vdom2), 1000);
 </script>
+
+<style>
+  .green {
+    color: green;
+  }
+
+  .red {
+    color: red;
+  }
+
+  .blue {
+    color: blue;
+  }
+</style>

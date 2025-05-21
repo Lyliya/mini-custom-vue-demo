@@ -57,10 +57,6 @@
     container.appendChild(el);
   }
 
-  const vdom = h("div", { class: "red" }, [h("span", null, "hello")]);
-
-  renderer(vdom, document.getElementById("app"));
-
   // n1 -> Old VDOM: Current representation of the screen
   // n2 -> New VDOM: What we want to update to
   function patch(n1, n2) {
@@ -125,18 +121,25 @@
     }
   }
 
-  const vdom2 = h("div", null, [h(MyComponent)]);
+  // let counter = 0;
 
-  setTimeout(() => patch(vdom, vdom2), 1000);
-
-  //   const vdom2 = h("div", { class: "green" }, [h("span", null, "Hello World!")]);
-  // const vdom2 = h(
+  // const vdom = h(
   //   "button",
-  //   { onClick: () => alert("You Clicked !") },
-  //   "Click me !"
+  //   {
+  //     onClick: () => {
+  //       counter += 1;
+  //       patch(vdom, h("button", undefined, String(counter)));
+  //     },
+  //   },
+  //   String(counter)
   // );
 
-  // setTimeout(() => patch(vdom, vdom2), 1000);
+  const vdom = h("div", { class: "red" }, [h("span", null, "Hello World!")]);
+  const vdom2 = h("div", { class: "green" }, [MyComponent]);
+
+  renderer(vdom, document.getElementById("app"));
+
+  setTimeout(() => patch(vdom, vdom2), 1000);
 </script>
 
 <style>

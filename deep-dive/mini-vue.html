@@ -1,0 +1,226 @@
+<div id="app"></div>
+
+<script>
+  function h(tag, props, children) {
+    return {
+      tag,
+      props,
+      children,
+    };
+  }
+
+  function mount(vnode, container) {
+    const el = document.createElement(vnode.tag);
+    vnode.el = el;
+
+    // props
+    for (const key in vnode.props) {
+      // Bypass event listener to prevent complexity on Patch functions
+      if (/^on/.test(key)) {
+        el.addEventListener(
+          key.substr(2).toLocaleLowerCase(),
+          vnode.props[key]
+        );
+      } else {
+        el.setAttribute(key, vnode.props[key]);
+      }
+    }
+
+    // children
+    if (typeof vnode.children === "string") {
+      el.appendChild(document.createTextNode(vnode.children));
+    } else {
+      vnode.children.forEach((child) => mount(child, el));
+    }
+
+    container.appendChild(el);
+  }
+
+  // n1 -> Old VDOM: Current representation of the screen
+  // n2 -> New VDOM: What we want to update to
+  function patch(n1, n2) {
+    if (n1.tag === n2.tag) {
+      // Same tags
+
+      const el = n1.el;
+      n2.el = n1.el; // Carry over new dom node to future snapshot
+
+      const oldProps = n1.props || {};
+      const newProps = n2.props || {};
+
+      for (const key in newProps) {
+        const oldValue = oldProps[key];
+        const newValue = newProps[key];
+
+        if (newValue !== oldValue) {
+          if (/^on/.test(key)) {
+            el.removeEventListener(key.substr(2).toLocaleLowerCase(), oldValue);
+            el.addEventListener(key.substr(2).toLocaleLowerCase(), newValue);
+          } else {
+            el.setAttribute(key, newValue);
+          }
+        }
+      }
+
+      for (const key in oldProps) {
+        if (!(key in newProps)) {
+          el.removeAttribute(key);
+        }
+      }
+
+      // children
+      const oldChildren = n1.children;
+      const newChildren = n2.children;
+      if (typeof newChildren === "string") {
+        el.textContent = newChildren;
+      } else {
+        if (typeof oldChildren === "string") {
+          el.innerHTML = ""; // Clear
+          newChildren.forEach((child) => mount(child, el));
+        } else {
+          // Both old and new childre are arrays
+          const commonLength = Math.min(oldChildren.length, newChildren.length);
+
+          for (let i = 0; i < commonLength; i++) {
+            patch(oldChildren[i], newChildren[i]);
+          }
+
+          if (newChildren.length > oldChildren.length) {
+            // Add new nodes to the container
+            newChildren
+              .slice(oldChildren.length)
+              .forEach((child) => mount(child, el));
+          } else if (newChildren.length < oldChildren.length) {
+            oldChildren
+              .length(newChildren.length)
+              .forEach((child) => el.removeChild(child.el));
+          }
+        }
+      }
+    } else {
+      // Replacement
+      const root = document.getElementById("app");
+      root.innerHTML = "";
+      mount(n2, root);
+    }
+  }
+
+  // Reactivity
+
+  let activeEffect;
+
+  // Easier to understand Dependency as object -> More efficient in plain set
+  class Dep {
+    subscribers = new Set();
+
+    depend() {
+      if (activeEffect) {
+        this.subscribers.add(activeEffect);
+      }
+    }
+
+    notify() {
+      this.subscribers.forEach((effect) => {
+        effect();
+      });
+    }
+  }
+
+  function watchEffect(effect) {
+    activeEffect = effect;
+    effect();
+    activeEffect = null;
+  }
+
+  //   Tracks dependencies based on target and key
+  const targetMap = new WeakMap();
+
+  function getDep(target, key) {
+    let depsMap = targetMap.get(target);
+    if (!depsMap) {
+      depsMap = new Map();
+      targetMap.set(target, depsMap);
+    }
+    let dep = depsMap.get(key);
+    if (!dep) {
+      dep = new Dep();
+      depsMap.set(key, dep);
+    }
+    return dep;
+  }
+
+  const reactiveHandlers = {
+    get(target, key, receiver) {
+      const dep = getDep(target, key);
+      dep.depend();
+      return Reflect.get(target, key, receiver);
+    },
+    set(target, key, value, receiver) {
+      const dep = getDep(target, key);
+      const result = Reflect.set(target, key, value, receiver);
+      dep.notify();
+      return result;
+    },
+  };
+
+  function reactive(raw) {
+    return new Proxy(raw, reactiveHandlers);
+  }
+
+  function ref(value) {
+    return new Proxy({ value }, reactiveHandlers);
+  }
+
+  const App = {
+    data: ref(0),
+    render() {
+      return h("div", { class: "flex" }, [
+        h(
+          "button",
+          {
+            onClick: () => {
+              this.data.value--;
+            },
+          },
+          "-"
+        ),
+        h("span", null, String(this.data.value)),
+        h(
+          "button",
+          {
+            onClick: () => {
+              this.data.value++;
+            },
+          },
+          "+"
+        ),
+      ]);
+    },
+  };
+
+  function mountApp(component, container) {
+    let isMounted = false;
+    let prevVdom;
+    watchEffect(() => {
+      if (!isMounted) {
+        prevVdom = component.render();
+        mount(prevVdom, container);
+        isMounted = true;
+      } else {
+        const newVdom = component.render();
+        patch(prevVdom, newVdom);
+        prevVdom = newVdom;
+      }
+    });
+  }
+
+  mountApp(App, document.getElementById("app"));
+</script>
+
+<style>
+  .flex {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+</style>

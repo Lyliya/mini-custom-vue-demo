@@ -1,17 +1,16 @@
-// Reactivity
-// Track the global effect
 let activeEffect;
-// Tracks dependencies based on target and key
 const targetMap = new WeakMap();
 
-// Easier to understand Dependency as object -> More efficient in plain set
+// Reactivity
 class Dep {
   subscribers = new Set();
+
   depend() {
     if (activeEffect) {
       this.subscribers.add(activeEffect);
     }
   }
+
   notify() {
     this.subscribers.forEach((effect) => {
       effect();
@@ -60,36 +59,3 @@ function reactive(raw) {
 function ref(value) {
   return new Proxy({ value }, reactiveHandlers);
 }
-
-const App = {
-  data: ref(0),
-  render() {
-    return h(
-      "button",
-      {
-        onClick: () => {
-          this.data.value++;
-        },
-      },
-      String(this.data.value)
-    );
-  },
-};
-
-function mountApp(component, container) {
-  let isMounted = false;
-  let prevVdom;
-  watchEffect(() => {
-    if (!isMounted) {
-      prevVdom = component.render();
-      mount(prevVdom, container);
-      isMounted = true;
-    } else {
-      const newVdom = component.render();
-      patch(prevVdom, newVdom);
-      prevVdom = newVdom;
-    }
-  });
-}
-
-mountApp(App, document.getElementById("app"));

@@ -1,0 +1,58 @@
+<div id="app">
+  <script type="text/javascript" src="./dom-manipulation.js"></script>
+</div>
+
+<script>
+  // We create the default virtual dom of our page
+  const vdom = h("div", { class: "blue" }, [
+    h("span", null, "Hello FE-CI !"),
+    h(
+      "a",
+      {
+        href: "https://www.google.com",
+        class: "red",
+        target: "__blank",
+      },
+      "Google"
+    ),
+  ]);
+
+  // We create a new version of our vdom
+  const vdom2 = h("div", { class: "red" }, [
+    h("span", null, "Bye FE-CI !"),
+    h(
+      "a",
+      {
+        href: "https://playplay.com",
+        class: "blue",
+        target: "__blank",
+      },
+      "Playplay"
+    ),
+  ]);
+
+  // We mount the default vdom to the container with id: app
+  mount(vdom, document.getElementById("app"));
+
+  /**
+   * After 2 second, we change the default vdom with the new version.
+   * With that, we can see that the patch function only change the node that have modification
+   * between both vdom.
+   * and does not rerender everything everytime
+   */
+  setTimeout(() => patch(vdom, vdom2), 2000);
+</script>
+
+<style>
+  .green {
+    color: green;
+  }
+
+  .red {
+    color: red;
+  }
+
+  .blue {
+    color: blue;
+  }
+</style>

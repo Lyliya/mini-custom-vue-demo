@@ -1,0 +1,91 @@
+<div id="app">
+  <!-- Re-use the dom function we wrote on Part 1 -->
+  <script
+    type="text/javascript"
+    src="../dom-manipulation/dom-manipulation.js"
+  ></script>
+  <script type="text/javascript" src="./reactivity.js"></script>
+</div>
+
+<script>
+  function mountApp(component, container) {
+    let isMounted = false;
+    let prevVdom;
+
+    watchEffect(() => {
+      if (!isMounted) {
+        prevVdom = component.render();
+        mount(prevVdom, container);
+        isMounted = true;
+      } else {
+        const newVdom = component.render();
+        patch(prevVdom, newVdom);
+        prevVdom = newVdom;
+      }
+    });
+  }
+
+  const App = {
+    data: reactive({
+      count: 0,
+      name: "Guillaume",
+    }),
+    render() {
+      return h("div", { class: "flex flex-col" }, [
+        h("div", { class: "flex items-center" }, [
+          h("span", null, "Update the counter by clicking + or - :"),
+          h(
+            "button",
+            {
+              onClick: () => {
+                this.data.count--;
+              },
+            },
+            "-"
+          ),
+          h("span", null, String(this.data.count)),
+          h(
+            "button",
+            {
+              onClick: () => {
+                this.data.count++;
+              },
+            },
+            "+"
+          ),
+        ]),
+        h("div", { class: "flex items-center" }, [
+          h("span", null, "The reactive is updated when updating the input:"),
+          h(
+            "input",
+            {
+              value: this.data.name,
+              onInput: (value) => {
+                this.data.name = value.target.value;
+              },
+            },
+            []
+          ),
+          h("span", null, String(this.data.name)),
+        ]),
+      ]);
+    },
+  };
+
+  mountApp(App, document.getElementById("app"));
+</script>
+
+<style>
+  .flex {
+    display: flex;
+    gap: 8px;
+  }
+
+  .flex-col {
+    flex-direction: column;
+  }
+
+  .items-center {
+    align-items: center;
+  }
+</style>

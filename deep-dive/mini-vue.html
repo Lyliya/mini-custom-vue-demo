@@ -107,18 +107,21 @@
 
   // Reactivity
 
+  // Global effect to store them. Needed because we loose the scope when adding it to the map
   let activeEffect;
 
-  // Easier to understand Dependency as object -> More efficient in plain set
+  // FIRST : We create the Dep class, track the subscriber to a dependencies
   class Dep {
     subscribers = new Set();
 
+    // Add an dependence to the variable
     depend() {
       if (activeEffect) {
         this.subscribers.add(activeEffect);
       }
     }
 
+    // Notify All subscriber about a change
     notify() {
       this.subscribers.forEach((effect) => {
         effect();
@@ -149,12 +152,15 @@
     return dep;
   }
 
+  // THIRD: Handler for the reactives
   const reactiveHandlers = {
+    // Get find the dependency, add the subscribe, and return a Reflect.
     get(target, key, receiver) {
       const dep = getDep(target, key);
       dep.depend();
       return Reflect.get(target, key, receiver);
     },
+    // Get the dependency, notify each of them
     set(target, key, value, receiver) {
       const dep = getDep(target, key);
       const result = Reflect.set(target, key, value, receiver);
@@ -163,10 +169,12 @@
     },
   };
 
+  // SECOND : Add Reactive, it's a proxy
   function reactive(raw) {
     return new Proxy(raw, reactiveHandlers);
   }
 
+  // LAST: Quick implementation, it's just a reactive with "value"
   function ref(value) {
     return new Proxy({ value }, reactiveHandlers);
   }
